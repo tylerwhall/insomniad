@@ -1,4 +1,5 @@
  [![Build Status](https://travis-ci.org/tylerwhall/insomniad.svg?branch=master)](https://travis-ci.org/tylerwhall/insomniad)
+ [![Coverity Status](https://scan.coverity.com/projects/3161/badge.svg)](https://scan.coverity.com/projects/3161)
 
 # insomniad
 
