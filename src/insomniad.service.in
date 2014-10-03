@@ -5,7 +5,8 @@ Description=User space autosleep policy daemon
 After=multi-user.target
 
 [Service]
-ExecStart=@BINDIR@/@PACKAGE@
+Environment="TIMEOUT=10"
+ExecStart=@BINDIR@/@PACKAGE@ -t $TIMEOUT
 
 [Install]
 WantedBy=multi-user.target
