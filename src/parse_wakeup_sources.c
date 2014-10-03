@@ -77,9 +77,14 @@ int parse_wakeup_sources(FILE *f, wakeup_source_handler handler, void *data)
     int count = 0;
 
     ret = fgets(buf, sizeof(buf), f);
-    if (ret != buf && errno) {
-        perror("fgets");
-        return -errno;
+    if (ret != buf) {
+        if (!feof(f) && errno) {
+            perror("fgets first line");
+            return -errno;
+        } else {
+            fprintf(stderr, "Failed to read first line of wakeup_sources\n");
+            return -1;
+        }
     }
     rc = verify_header(buf);
     if (rc)
@@ -100,8 +105,8 @@ int parse_wakeup_sources(FILE *f, wakeup_source_handler handler, void *data)
         if (rc)
             return rc;
     };
-    if (ferror(f)) {
-        perror("fgets");
+    if (!feof(f) && errno) {
+        perror("fgets ");
         return -errno;
     }
 
