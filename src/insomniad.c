@@ -46,6 +46,10 @@ struct insomniad_ctx {
 
 static void insomniad_init(struct insomniad_ctx *ctx)
 {
+    /* Necessary to flush logging to systemd journal in a timely manner */
+    setlinebuf(stdout);
+    setlinebuf(stderr);
+
     ctx->state_fd = open("/sys/power/state", O_WRONLY, O_CLOEXEC);
     if (ctx->state_fd == -1) {
         perror("Error opening power state");
