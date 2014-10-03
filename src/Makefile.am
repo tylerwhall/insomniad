@@ -14,3 +14,7 @@ check_parse_wakeup_sources_SOURCES = src/check_parse_wakeup_sources.c
 check_parse_wakeup_sources_CFLAGS = @CHECK_CFLAGS@ $(AM_CFLAGS)
 check_parse_wakeup_sources_LDADD = @CHECK_LIBS@
 endif
+
+if HAVE_SYSTEMD
+systemdsystemunit_DATA = src/insomniad.service
+endif

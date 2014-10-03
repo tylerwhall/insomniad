@@ -1,0 +1,11 @@
+[Unit]
+Description=User space autosleep policy daemon
+
+# Don't start autosuspending the system until it is finished booting
+After=multi-user.target
+
+[Service]
+ExecStart=@BINDIR@/@PACKAGE@
+
+[Install]
+WantedBy=multi-user.target
