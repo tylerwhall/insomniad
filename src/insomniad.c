@@ -26,6 +26,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <errno.h>
+#include <assert.h>
 
 #include "common.h"
 #include "policy.h"
@@ -35,6 +36,8 @@ static int dry_run = 0;
 
 struct insomniad_ctx {
     int state_fd;
+    int wakeup_count_fd;
+    char wakeup_count[32]; /* More than enough to hold the %u format from the kernel */
 };
 
 static void insomniad_init(struct insomniad_ctx *ctx)
@@ -44,6 +47,7 @@ static void insomniad_init(struct insomniad_ctx *ctx)
         perror("Error power state");
         exit(1);
     }
+    ctx->wakeup_count_fd = -1;
 }
 
 static void usage(void)
@@ -85,42 +89,48 @@ static void go_to_sleep(struct insomniad_ctx *ctx)
     }
 }
 
-static FILE *open_wakeup_count(void)
+static void open_wakeup_count(struct insomniad_ctx *ctx)
 {
-    FILE *f = fopen("/sys/power/wakeup_count", "r+");
-    if (!f) {
+    assert(ctx->wakeup_count_fd == -1);
+    ctx->wakeup_count_fd = open("/sys/power/wakeup_count", O_RDWR, O_CLOEXEC);
+    if (!ctx->wakeup_count_fd) {
         perror("Error opening wakeup_count");
         exit(1);
     }
-    return f;
 }
 
-static unsigned int read_wakeup_count(FILE *wakeup_count)
+static void read_wakeup_count(struct insomniad_ctx *ctx)
 {
-    unsigned int count;
     int rc;
 
-    rc = fscanf(wakeup_count, "%u", &count);
-    if (rc != 1 || rc == EOF) {
-        fprintf(stderr, "Error reading wakeup_count");
+    open_wakeup_count(ctx);
+    memset(&ctx->wakeup_count, 0, sizeof(ctx->wakeup_count));
+    rc = read(ctx->wakeup_count_fd, &ctx->wakeup_count, sizeof(ctx->wakeup_count));
+    if (rc == -1) {
+        perror("Error reading wakeup_count");
         exit(1);
     }
-
-    return count;
 }
 
-static int write_wakeup_count(FILE *wakeup_count, unsigned count)
+static int write_wakeup_count(struct insomniad_ctx *ctx)
 {
-    int rc = fprintf(wakeup_count, "%u", count);
+    int rc;
 
+    assert(ctx->wakeup_count_fd != -1);
+    rc = write(ctx->wakeup_count_fd, ctx->wakeup_count, strlen(ctx->wakeup_count));
     if (rc == -1) {
         if (errno != EINVAL && errno != EBUSY) {
             perror("Unexpected error from wakeup_count");
             exit(1);
         }
+    } else {
+        rc = 0;
     }
 
-    return (rc == -1) ? -1 : 0;
+    close(ctx->wakeup_count_fd);
+    ctx->wakeup_count_fd = -1;
+
+    return rc;
 }
 
 int main(int argc, char *argv[])
@@ -133,22 +143,18 @@ int main(int argc, char *argv[])
 
     while (1) {
         int rc;
-        unsigned int count;
-        FILE *wakeup_file = open_wakeup_count();
 
-        count = read_wakeup_count(wakeup_file);
-        pr_debug("wakeup_count = %u\n", count);
+        /* Blocks until no wakeup sources are active */
+        read_wakeup_count(&ctx);
 
-        if (!evaluate_policy(count)) {
-            fclose(wakeup_file);
-            continue;
-        }
+        /* Allow policy to futher delay */
+        evaluate_policy();
 
-        rc = write_wakeup_count(wakeup_file, count);
-        fclose(wakeup_file);
+        rc = write_wakeup_count(&ctx);
         if (rc) {
             /* This will fail when an event happens between read() and
              * write(). We raced with a wakeup event, so start over. */
+            pr_debug("Event occurred since reading wakeup_count\n");
             continue;
         }
 

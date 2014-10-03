@@ -28,6 +28,7 @@
 
 #include "common.h"
 #include "parse_wakeup_sources.h"
+#include "policy.h"
 
 #define TIMEOUT_MS 10000
 
@@ -81,9 +82,8 @@ static uint64_t get_time_ms(void)
     return time;
 }
 
-int evaluate_policy(unsigned int count)
+int evaluate_policy(void)
 {
-    (void)count;
     uint64_t last_event = get_most_recent_event();
     uint64_t current_time = get_time_ms();
     uint64_t delta = current_time - last_event;
