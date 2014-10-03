@@ -35,6 +35,8 @@
 /* Options */
 static int dry_run = 0;
 unsigned long hysteresis_ms = 10*1000;
+int info = 0;
+int debug = 0;
 
 struct insomniad_ctx {
     int state_fd;
@@ -58,6 +60,8 @@ static void usage(void)
            "    -n      dry run. Emit message instead of suspending\n"
            "    -t      hysteresis time in ms. Defaults to 10000 (10 seconds)\n"
            "            Will not sleep until at least this much time has elapsed since the last wakeup event\n"
+           "    -v      Enable verbose message\n"
+           "    -d      Enable debug messages (implies -v)\n"
            );
     exit(1);
 }
@@ -66,7 +70,7 @@ static void get_opts(int argc, char *argv[])
 {
     int c;
 
-    while ((c = getopt(argc, argv, "hnt:")) != -1) {
+    while ((c = getopt(argc, argv, "hnt:vd")) != -1) {
         switch (c) {
         case 'n':
             dry_run = 1;
@@ -80,6 +84,12 @@ static void get_opts(int argc, char *argv[])
             }
             break;
         }
+        case 'd':
+            debug = 1;
+            /* Fall through */
+        case 'v':
+            info = 1;
+            break;
         case 'h':
         default:
             usage();
@@ -168,7 +178,7 @@ int main(int argc, char *argv[])
         if (rc) {
             /* This will fail when an event happens between read() and
              * write(). We raced with a wakeup event, so start over. */
-            pr_debug("Event occurred since reading wakeup_count\n");
+            pr_info("Event occurred since reading wakeup_count\n");
             continue;
         }
 

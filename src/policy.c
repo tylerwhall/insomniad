@@ -61,6 +61,8 @@ static uint64_t get_most_recent_event(void)
 
     fclose(f);
 
+    pr_info("Last wakeup event %s\n", wup.name);
+
     return wup.last_change;
 }
 
@@ -94,7 +96,7 @@ int evaluate_policy(void)
     if (delta < hysteresis_ms) {
         uint64_t delay = hysteresis_ms - delta;
 
-        pr_debug("Delaying for         %" PRIu64 "ms\n", delay);
+        pr_info("Delaying for         %" PRIu64 "ms\n", delay);
         usleep(delay * 1000);
     }
 

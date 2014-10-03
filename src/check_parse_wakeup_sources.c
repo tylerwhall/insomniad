@@ -24,6 +24,10 @@
 #include <stdlib.h>
 #include <check.h>
 
+/* Enable all logging for tests */
+int info = 1;
+int debug = 1;
+
 START_TEST(test_parse_wakeup_source)
 {
     struct wakeup_source wup;
