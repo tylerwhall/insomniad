@@ -194,6 +194,7 @@ int main(int argc, char *argv[])
         }
 
         /* write successful. Going down now. */
+        pr_info("Going to sleep\n");
         rc = go_to_sleep(&ctx);
         if (rc) {
             /* Non-fatal error. Try again. */
@@ -201,6 +202,7 @@ int main(int argc, char *argv[])
             usleep(1000);
             continue;
         }
+        pr_info("Exited sleep\n");
 
         /*
          * Sleep for at least the requested timeout after wake, emulating a

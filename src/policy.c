@@ -89,9 +89,9 @@ int evaluate_policy(void)
     uint64_t delta = current_time - last_event;
 
     assert(current_time >= last_event);
-    pr_debug("Last wakeup event at %" PRIu64 "ms\n", last_event);
-    pr_debug("Current time         %" PRIu64 "ms\n", current_time);
-    pr_debug("Delta                %" PRIu64 "ms\n", delta);
+    pr_info("Last wakeup event at %" PRIu64 "ms\n", last_event);
+    pr_info("Current time         %" PRIu64 "ms\n", current_time);
+    pr_info("Delta                %" PRIu64 "ms\n", delta);
 
     if (delta < hysteresis_ms) {
         uint64_t delay = hysteresis_ms - delta;
