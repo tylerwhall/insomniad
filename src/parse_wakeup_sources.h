@@ -1,5 +1,8 @@
 #pragma once
 
+#include <stdio.h>
+#include <inttypes.h>
+
 #define WUP_SRC_NAMELEN 12
 #define xstr(x) str(x)
 #define str(x) #x

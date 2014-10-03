@@ -23,11 +23,13 @@
 #include <string.h>
 #include <inttypes.h>
 #include <unistd.h>
+#include <time.h>
+#include <assert.h>
 
 #include "common.h"
 #include "parse_wakeup_sources.h"
 
-#define TIMEOUT 10
+#define TIMEOUT_MS 10000
 
 static int sort_wakeup(struct wakeup_source *wup, void *data)
 {
@@ -63,13 +65,40 @@ static uint64_t get_most_recent_event(void)
     return wup.last_change;
 }
 
+static uint64_t get_time_ms(void)
+{
+    struct timespec tp;
+    uint64_t time = 0;
+
+    int rc = clock_gettime(CLOCK_MONOTONIC, &tp);
+    if (rc) {
+        perror("clock gettime");
+        exit (1);
+    }
+
+    time = tp.tv_sec * 1000;
+    time += tp.tv_nsec / 1000 / 1000;
+    return time;
+}
+
 int evaluate_policy(unsigned int count)
 {
     (void)count;
     uint64_t last_event = get_most_recent_event();
+    uint64_t current_time = get_time_ms();
+    uint64_t delta = current_time - last_event;
 
-    pr_debug("Last wakeup event at %" PRIu64 "\n", last_event);
-    sleep(TIMEOUT);
+    assert(current_time >= last_event);
+    pr_debug("Last wakeup event at %" PRIu64 "ms\n", last_event);
+    pr_debug("Current time         %" PRIu64 "ms\n", current_time);
+    pr_debug("Delta                %" PRIu64 "ms\n", delta);
+
+    if (delta < TIMEOUT_MS) {
+        uint64_t delay = TIMEOUT_MS - delta;
+
+        pr_debug("Delaying for         %" PRIu64 "ms\n", delay);
+        usleep(delay * 1000);
+    }
 
     return 1;
 }

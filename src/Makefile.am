@@ -1,5 +1,10 @@
 bin_PROGRAMS = insomniad
-insomniad_SOURCES = src/insomniad.c
+insomniad_SOURCES = \
+	src/insomniad.c \
+	src/policy.h \
+	src/policy.c \
+	src/parse_wakeup_sources.h \
+	src/parse_wakeup_sources.c
 
 if HAVE_CHECK
 TESTS = check_parse_wakeup_sources

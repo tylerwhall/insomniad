@@ -28,8 +28,7 @@
 #include <errno.h>
 
 #include "common.h"
-
-#define TIMEOUT 10
+#include "policy.h"
 
 /* Options */
 static int dry_run = 0;
@@ -45,15 +44,6 @@ static void insomniad_init(struct insomniad_ctx *ctx)
         perror("Error power state");
         exit(1);
     }
-}
-
-static int evaluate_policy(unsigned int count)
-{
-    (void)count;
-
-    sleep(TIMEOUT);
-
-    return 1;
 }
 
 static void usage(void)
