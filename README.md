@@ -1,3 +1,5 @@
+ [![Build Status](https://travis-ci.org/tylerwhall/insomniad.svg?branch=master)](https://travis-ci.org/tylerwhall/insomniad)
+
 # insomniad
 
 insomniad is a daemon implementing Linux's autosleep mechanism in user space.

@@ -19,6 +19,8 @@ AC_PROG_CC
 PKG_CHECK_MODULES([CHECK], [check], [HAVE_CHECK=true], [HAVE_CHECK=false])
 AM_CONDITIONAL([HAVE_CHECK], [test x$HAVE_CHECK == xtrue])
 
+AC_SEARCH_LIBS([clock_gettime], [rt])
+
 dnl Check for systemd
 AC_ARG_WITH([systemdsystemunitdir],
              AS_HELP_STRING([--with-systemdsystemunitdir=DIR], [Directory for systemd service files]),
