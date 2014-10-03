@@ -184,6 +184,15 @@ int main(int argc, char *argv[])
 
         /* write successful. Going down now. */
         go_to_sleep(&ctx);
+
+        /*
+         * Sleep for at least the requested timeout after wake, emulating a
+         * wakeup source on resume. Normally this would be taken care of by the
+         * kernel generating a wakeup event on resume and we would make sure
+         * not to sleep until it is released + our timeout. This makes sure our
+         * timeout is applied to spurious wakeups as well.
+         */
+        usleep(hysteresis_ms * 1000);
     };
     return 0;
 }
