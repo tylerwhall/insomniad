@@ -23,15 +23,8 @@
 #include <inttypes.h>
 #include <errno.h>
 
-#define WUP_SRC_NAMELEN 12
-#define xstr(x) str(x)
-#define str(x) #x
-#define WUP_SRC_NAMELEN_STR xstr(WUP_SRC_NAMELEN)
-
-struct wakeup_source {
-    char name[WUP_SRC_NAMELEN];
-    uint64_t last_change;
-};
+#include "common.h"
+#include "parse_wakeup_sources.h"
 
 static int verify_header(const char *line)
 {
@@ -76,7 +69,7 @@ static int parse_wakeup_source(const char *line, struct wakeup_source *wup)
     return 0;
 }
 
-static int parse_wakeup_sources(FILE *f)
+int parse_wakeup_sources(FILE *f, wakeup_source_handler handler, void *data)
 {
     char buf[1024];
     char *ret;
@@ -92,13 +85,20 @@ static int parse_wakeup_sources(FILE *f)
     if (rc)
         return rc;
 
-    struct wakeup_source wup;
     while (fgets(buf, sizeof(buf), f) == buf) {
+        struct wakeup_source wup;
+
         rc = parse_wakeup_source(buf, &wup);
         if (rc)
             return rc;
-        printf("name %-12s\ttime %" PRIu64 "\n", wup.name, wup.last_change);
         count++;
+        pr_debug("name %-12s\ttime %" PRIu64 "\n", wup.name, wup.last_change);
+
+        if (!handler)
+            continue;
+        rc = handler(&wup, data);
+        if (rc)
+            return rc;
     };
     if (ferror(f)) {
         perror("fgets");

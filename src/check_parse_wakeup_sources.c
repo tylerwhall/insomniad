@@ -36,11 +36,30 @@ START_TEST(test_parse_wakeup_source)
 }
 END_TEST
 
+static int increment_count(struct wakeup_source *wup, void *data)
+{
+    int *count = data;
+
+    ck_assert(wup != NULL);
+    (*count)++;
+
+    return 0;
+}
+
 START_TEST(test_parse_wakeup_sources)
+    int count = 0;
     FILE *f = fopen(TCASE_DIR "wakeup_sources", "r");
 
     ck_assert_msg(f, "Failed to open test case.");
-    ck_assert_int_eq(12, parse_wakeup_sources(f));
+
+    /* Return value should be the number of sources in the file */
+    ck_assert_int_eq(12, parse_wakeup_sources(f, NULL, NULL));
+
+    ck_assert_int_eq(0, fseek(f, 0, SEEK_SET));
+    /* Iterator function should be called once for each source */
+    parse_wakeup_sources(f, increment_count, &count);
+    ck_assert_int_eq(12, count);
+
     fclose(f);
 END_TEST
 

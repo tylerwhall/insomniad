@@ -27,11 +27,9 @@
 #include <unistd.h>
 #include <errno.h>
 
-#define TIMEOUT 10
+#include "common.h"
 
-#define pr_notice printf
-#define pr_info printf
-#define pr_debug printf
+#define TIMEOUT 10
 
 /* Options */
 static int dry_run = 0;
