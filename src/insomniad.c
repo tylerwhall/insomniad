@@ -19,6 +19,7 @@
  */
 
 #include <stdlib.h>
+#include <limits.h>
 #include <stdio.h>
 #include <string.h>
 #include <sys/types.h>
@@ -33,6 +34,7 @@
 
 /* Options */
 static int dry_run = 0;
+unsigned long hysteresis_ms = 10*1000;
 
 struct insomniad_ctx {
     int state_fd;
@@ -44,7 +46,7 @@ static void insomniad_init(struct insomniad_ctx *ctx)
 {
     ctx->state_fd = open("/sys/power/state", O_WRONLY, O_CLOEXEC);
     if (ctx->state_fd == -1) {
-        perror("Error power state");
+        perror("Error opening power state");
         exit(1);
     }
     ctx->wakeup_count_fd = -1;
@@ -52,8 +54,10 @@ static void insomniad_init(struct insomniad_ctx *ctx)
 
 static void usage(void)
 {
-    printf("insomniad [OPTION...]\n"
+    fprintf(stderr, "insomniad [OPTION...]\n"
            "    -n      dry run. Emit message instead of suspending\n"
+           "    -t      hysteresis time in ms. Defaults to 10000 (10 seconds)\n"
+           "            Will not sleep until at least this much time has elapsed since the last wakeup event\n"
            );
     exit(1);
 }
@@ -62,11 +66,20 @@ static void get_opts(int argc, char *argv[])
 {
     int c;
 
-    while ((c = getopt(argc, argv, "hn")) != -1) {
+    while ((c = getopt(argc, argv, "hnt:")) != -1) {
         switch (c) {
         case 'n':
             dry_run = 1;
             break;
+        case 't': {
+            char *endptr;
+            hysteresis_ms = strtoul(optarg, &endptr, 0);
+            if (endptr == optarg || (hysteresis_ms == ULONG_MAX && errno == ERANGE)) {
+                fprintf(stderr, "Error interpreting %s as integer ms\n", optarg);
+                usage();
+            }
+            break;
+        }
         case 'h':
         default:
             usage();
@@ -140,6 +153,7 @@ int main(int argc, char *argv[])
     get_opts(argc, argv);
 
     insomniad_init(&ctx);
+    pr_info("Using hysteresis time of %lu ms\n", hysteresis_ms);
 
     while (1) {
         int rc;

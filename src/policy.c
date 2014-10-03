@@ -30,8 +30,6 @@
 #include "parse_wakeup_sources.h"
 #include "policy.h"
 
-#define TIMEOUT_MS 10000
-
 static int sort_wakeup(struct wakeup_source *wup, void *data)
 {
     struct wakeup_source *recent = data;
@@ -93,8 +91,8 @@ int evaluate_policy(void)
     pr_debug("Current time         %" PRIu64 "ms\n", current_time);
     pr_debug("Delta                %" PRIu64 "ms\n", delta);
 
-    if (delta < TIMEOUT_MS) {
-        uint64_t delay = TIMEOUT_MS - delta;
+    if (delta < hysteresis_ms) {
+        uint64_t delay = hysteresis_ms - delta;
 
         pr_debug("Delaying for         %" PRIu64 "ms\n", delay);
         usleep(delay * 1000);
