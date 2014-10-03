@@ -97,19 +97,30 @@ static void get_opts(int argc, char *argv[])
     }
 }
 
-static void go_to_sleep(struct insomniad_ctx *ctx)
+static int go_to_sleep(struct insomniad_ctx *ctx)
 {
+    int rc = 0;
+
     if (!dry_run) {
-        int rc = write(ctx->state_fd, "mem", 3);
+        rc = write(ctx->state_fd, "mem", 3);
         if (rc == -1) {
-            perror("Failed to write to power state file");
-            exit(1);
+            if (errno == EBUSY) {
+                /* EBUSY is acceptable */
+                rc = -errno;
+            } else {
+                perror("Failed to write to power state file");
+                exit(1);
+            }
+        } else {
+            rc = 0;
         }
     } else {
         pr_notice("Would have attempted sleep\n");
         /* Prevent busy spin */
         sleep(1);
     }
+
+    return rc;
 }
 
 static void open_wakeup_count(struct insomniad_ctx *ctx)
@@ -183,7 +194,13 @@ int main(int argc, char *argv[])
         }
 
         /* write successful. Going down now. */
-        go_to_sleep(&ctx);
+        rc = go_to_sleep(&ctx);
+        if (rc) {
+            /* Non-fatal error. Try again. */
+            pr_info("Non-fatal error %s writing to suspend state\n", strerror(-rc));
+            usleep(1000);
+            continue;
+        }
 
         /*
          * Sleep for at least the requested timeout after wake, emulating a
