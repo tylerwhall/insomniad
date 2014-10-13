@@ -22,6 +22,7 @@
 #include <string.h>
 #include <inttypes.h>
 #include <errno.h>
+#include <malloc.h>
 
 #include "common.h"
 #include "parse_wakeup_sources.h"
@@ -45,10 +46,16 @@ static int verify_header(const char *line)
     return 0;
 }
 
+void destroy_wakeup_source(struct wakeup_source *wup)
+{
+    free(wup->name);
+    wup->name = NULL;
+}
+
 static int parse_wakeup_source(const char *line, struct wakeup_source *wup)
 {
     const char *wup_src_str =
-        "%" WUP_SRC_NAMELEN_STR "s \t"  /* name */
+        "%ms \t"                    /* name */
         "%*" SCNu64 "\t"            /* active_count */
         "%*" SCNu64 "\t"            /* event_count */
         "%*" SCNu64 "\t"            /* wakeup_count */
@@ -59,11 +66,13 @@ static int parse_wakeup_source(const char *line, struct wakeup_source *wup)
         "%"  SCNu64 "\t"            /* last_change */
         "%*" SCNu64 "\t";           /* prevent_suspend_time */
 
-    int rc = sscanf(line, wup_src_str, wup->name, &wup->last_change);
+    int rc = sscanf(line, wup_src_str, &wup->name, &wup->last_change);
 
     if (rc != 2) {
         fprintf(stderr, "Unmatched line (count %d)\n%s\n", rc, line);
         fprintf(stderr, "Match string %s\n", wup_src_str);
+        if (rc >= 1)
+            destroy_wakeup_source(wup);
         return -1;
     }
     return 0;
@@ -71,7 +80,10 @@ static int parse_wakeup_source(const char *line, struct wakeup_source *wup)
 
 int parse_wakeup_sources(FILE *f, wakeup_source_handler handler, void *data)
 {
-    char buf[1024];
+    char buf[4096 + 128]; /* wake_lock names can be up to a page in length +
+                             room for the integer fields. This isn't portable
+                             for larger page sizes, but let's hope no one is
+                             using a name anywhere near this long. */
     char *ret;
     int rc;
     int count = 0;
@@ -99,9 +111,12 @@ int parse_wakeup_sources(FILE *f, wakeup_source_handler handler, void *data)
         count++;
         pr_debug("name %-12s\ttime %" PRIu64 "\n", wup.name, wup.last_change);
 
-        if (!handler)
+        if (!handler) {
+            destroy_wakeup_source(&wup);
             continue;
+        }
         rc = handler(&wup, data);
+        destroy_wakeup_source(&wup);
         if (rc)
             return rc;
     };

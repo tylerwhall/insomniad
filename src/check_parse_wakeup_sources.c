@@ -37,6 +37,7 @@ START_TEST(test_parse_wakeup_source)
     ck_assert(!rc);
     ck_assert_str_eq(wup.name, "source");
     ck_assert_int_eq(wup.last_change, 500);
+    destroy_wakeup_source(&wup);
 }
 END_TEST
 
@@ -58,7 +59,7 @@ START_TEST(test_parse_wakeup_sources_callback)
 
     /* Iterator function should be called once for each source */
     parse_wakeup_sources(f, increment_count, &count);
-    ck_assert_int_eq(12, count);
+    ck_assert_int_eq(13, count);
 
     fclose(f);
 END_TEST
@@ -69,7 +70,7 @@ START_TEST(test_parse_wakeup_sources)
     ck_assert_msg(f != NULL, "Failed to open test case.");
 
     /* Return value should be the number of sources in the file */
-    ck_assert_int_eq(12, parse_wakeup_sources(f, NULL, NULL));
+    ck_assert_int_eq(13, parse_wakeup_sources(f, NULL, NULL));
 
     fclose(f);
 END_TEST

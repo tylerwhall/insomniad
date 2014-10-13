@@ -3,13 +3,8 @@
 #include <stdio.h>
 #include <inttypes.h>
 
-#define WUP_SRC_NAMELEN 12
-#define xstr(x) str(x)
-#define str(x) #x
-#define WUP_SRC_NAMELEN_STR xstr(WUP_SRC_NAMELEN)
-
 struct wakeup_source {
-    char name[WUP_SRC_NAMELEN];
+    char *name;
     uint64_t last_change;
 };
 
@@ -18,3 +13,4 @@ struct wakeup_source {
 typedef int (*wakeup_source_handler)(struct wakeup_source *wup, void *data);
 
 int parse_wakeup_sources(FILE *f, wakeup_source_handler handler, void *data);
+void destroy_wakeup_source(struct wakeup_source *wup);
