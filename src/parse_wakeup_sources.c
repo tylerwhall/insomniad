@@ -23,6 +23,7 @@
 #include <inttypes.h>
 #include <errno.h>
 #include <malloc.h>
+#include <assert.h>
 
 #include "common.h"
 #include "parse_wakeup_sources.h"
@@ -46,13 +47,34 @@ static int verify_header(const char *line)
     return 0;
 }
 
-void destroy_wakeup_source(struct wakeup_source *wup)
+void wakeup_source_ref(struct wakeup_source *wup)
 {
-    free(wup->name);
-    wup->name = NULL;
+    assert(wup->refcnt > 0);
+    wup->refcnt++;
 }
 
-static int parse_wakeup_source(const char *line, struct wakeup_source *wup)
+void wakeup_source_unref(struct wakeup_source *wup)
+{
+    assert(wup->refcnt > 0);
+    if (--wup->refcnt == 0) {
+        free(wup->name);
+        wup->name = NULL;
+        free(wup);
+    }
+}
+
+static struct wakeup_source *wakeup_source_create(void)
+{
+    struct wakeup_source *wup = malloc(sizeof(*wup));
+
+    wup->name = 0;
+    wup->last_change = 0;
+    wup->refcnt = 1;
+
+    return wup;
+}
+
+static int parse_wakeup_source(const char *line, struct wakeup_source **wup)
 {
     const char *wup_src_str =
         "%ms \t"                    /* name */
@@ -66,13 +88,17 @@ static int parse_wakeup_source(const char *line, struct wakeup_source *wup)
         "%"  SCNu64 "\t"            /* last_change */
         "%*" SCNu64 "\t";           /* prevent_suspend_time */
 
-    int rc = sscanf(line, wup_src_str, &wup->name, &wup->last_change);
+    *wup = wakeup_source_create();
+    if (!wup)
+        return -ENOMEM;
+
+    int rc = sscanf(line, wup_src_str, &(*wup)->name, &(*wup)->last_change);
 
     if (rc != 2) {
         fprintf(stderr, "Unmatched line (count %d)\n%s\n", rc, line);
         fprintf(stderr, "Match string %s\n", wup_src_str);
         if (rc >= 1)
-            destroy_wakeup_source(wup);
+            wakeup_source_unref(*wup);
         return -1;
     }
     return 0;
@@ -103,20 +129,20 @@ int parse_wakeup_sources(FILE *f, wakeup_source_handler handler, void *data)
         return rc;
 
     while (fgets(buf, sizeof(buf), f) == buf) {
-        struct wakeup_source wup;
+        struct wakeup_source *wup;
 
         rc = parse_wakeup_source(buf, &wup);
         if (rc)
             return rc;
         count++;
-        pr_debug("name %-12s\ttime %" PRIu64 "\n", wup.name, wup.last_change);
+        pr_debug("name %-12s\ttime %" PRIu64 "\n", wup->name, wup->last_change);
 
         if (!handler) {
-            destroy_wakeup_source(&wup);
+            wakeup_source_unref(wup);
             continue;
         }
-        rc = handler(&wup, data);
-        destroy_wakeup_source(&wup);
+        rc = handler(wup, data);
+        wakeup_source_unref(wup);
         if (rc)
             return rc;
     };

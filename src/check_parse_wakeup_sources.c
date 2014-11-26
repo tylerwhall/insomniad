@@ -30,14 +30,14 @@ int debug = 1;
 
 START_TEST(test_parse_wakeup_source)
 {
-    struct wakeup_source wup;
+    struct wakeup_source *wup;
     int rc;
 
     rc = parse_wakeup_source("source\t0\t0\t0\t0\t0\t0\t0\t500\t0\n", &wup);
     ck_assert(!rc);
-    ck_assert_str_eq(wup.name, "source");
-    ck_assert_int_eq(wup.last_change, 500);
-    destroy_wakeup_source(&wup);
+    ck_assert_str_eq(wup->name, "source");
+    ck_assert_int_eq(wup->last_change, 500);
+    wakeup_source_unref(wup);
 }
 END_TEST
 

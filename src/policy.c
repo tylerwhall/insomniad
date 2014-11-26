@@ -25,6 +25,7 @@
 #include <unistd.h>
 #include <time.h>
 #include <assert.h>
+#include <errno.h>
 
 #include "common.h"
 #include "parse_wakeup_sources.h"
@@ -32,19 +33,22 @@
 
 static int sort_wakeup(struct wakeup_source *wup, void *data)
 {
-    struct wakeup_source *recent = data;
+    struct wakeup_source **recent = data;
 
-    if (recent->last_change < wup->last_change) {
-        *recent = *wup;
-    }
+    if (*recent != NULL && (*recent)->last_change >= wup->last_change)
+        return 0;
 
+    if (*recent)
+        wakeup_source_unref(*recent);
+    wakeup_source_ref(wup);
+    *recent = wup;
     return 0;
 }
 
-static uint64_t get_most_recent_event(void)
+static struct wakeup_source *get_most_recent_event(void)
 {
     int rc;
-    struct wakeup_source wup;
+    struct wakeup_source *wup = NULL;
     FILE *f = fopen("/sys/kernel/debug/wakeup_sources", "r");
 
     if (!f) {
@@ -52,7 +56,6 @@ static uint64_t get_most_recent_event(void)
         exit(1);
     }
 
-    memset(&wup, 0, sizeof(wup));
     rc = parse_wakeup_sources(f, sort_wakeup, &wup);
     if (rc < 0) {
         printf("Error %d parsing wakeup sources\n", rc);
@@ -61,9 +64,9 @@ static uint64_t get_most_recent_event(void)
 
     fclose(f);
 
-    pr_info("Last wakeup event %s\n", wup.name);
+    pr_info("Last wakeup event %s\n", wup->name);
 
-    return wup.last_change;
+    return wup;
 }
 
 static uint64_t get_time_ms(void)
@@ -84,14 +87,20 @@ static uint64_t get_time_ms(void)
 
 int evaluate_policy(void)
 {
-    uint64_t last_event = get_most_recent_event();
+    struct wakeup_source *wup = get_most_recent_event();
     uint64_t current_time = get_time_ms();
-    uint64_t delta = current_time - last_event;
+    uint64_t delta;
 
-    assert(current_time >= last_event);
-    pr_info("Last wakeup event at %" PRIu64 "ms\n", last_event);
+    if (!wup)
+        return -ENOMEM;
+    assert(current_time >= wup->last_change);
+
+    delta = current_time - wup->last_change;
+    pr_info("Last wakeup event at %" PRIu64 "ms\n", wup->last_change);
     pr_info("Current time         %" PRIu64 "ms\n", current_time);
     pr_info("Delta                %" PRIu64 "ms\n", delta);
+
+    wakeup_source_unref(wup);
 
     if (delta < hysteresis_ms) {
         uint64_t delay = hysteresis_ms - delta;
