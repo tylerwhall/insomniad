@@ -4,4 +4,17 @@ install: "sudo apt-get install check"
 script: "./build.sh"
 compiler:
     - clang
-    - gcc
+env:
+  global:
+   # The next declaration is the encrypted COVERITY_SCAN_TOKEN, created
+   #   via the "travis encrypt" command using the project repo's public key
+   - secure: "BjdU/LqYl8HRc2aMMC5TREdCTzLxjJu4X1cB6ZAhvxG3nuePcC+iFoYF0gufz9P2lhzyxHiEt8kCCOvkDi9LNw9gcpnpWUdGk00me1H4DWG+zOSwotFmDsbxaFgWu6T4RcRPLzXC2jfsr8jRoEvnTyBfdZ4FpCMcCJ5TLYO4n6I="
+
+addons:
+  coverity_scan:
+    project:
+      name: "tylerwhall/insomniad"
+      description: "Build submitted via Travis CI"
+    notification_email: tylerwhall@gmail.com
+    build_command:   "./build.sh"
+    branch_pattern: coverity_scan
