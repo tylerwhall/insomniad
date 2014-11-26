@@ -106,7 +106,7 @@ static int go_to_sleep(struct insomniad_ctx *ctx)
     int rc = 0;
 
     if (!dry_run) {
-        rc = write(ctx->state_fd, "mem", 3);
+        rc = TEMP_FAILURE_RETRY(write(ctx->state_fd, "mem", 3));
         if (rc == -1) {
             if (errno == EBUSY) {
                 /* EBUSY is acceptable */
@@ -130,7 +130,7 @@ static int go_to_sleep(struct insomniad_ctx *ctx)
 static void open_wakeup_count(struct insomniad_ctx *ctx)
 {
     assert(ctx->wakeup_count_fd == -1);
-    ctx->wakeup_count_fd = open("/sys/power/wakeup_count", O_RDWR, O_CLOEXEC);
+    ctx->wakeup_count_fd = TEMP_FAILURE_RETRY(open("/sys/power/wakeup_count", O_RDWR, O_CLOEXEC));
     if (!ctx->wakeup_count_fd) {
         perror("Error opening wakeup_count");
         exit(1);
@@ -143,7 +143,7 @@ static void read_wakeup_count(struct insomniad_ctx *ctx)
 
     open_wakeup_count(ctx);
     memset(&ctx->wakeup_count, 0, sizeof(ctx->wakeup_count));
-    rc = read(ctx->wakeup_count_fd, &ctx->wakeup_count, sizeof(ctx->wakeup_count));
+    rc = TEMP_FAILURE_RETRY(read(ctx->wakeup_count_fd, &ctx->wakeup_count, sizeof(ctx->wakeup_count)));
     if (rc == -1) {
         perror("Error reading wakeup_count");
         exit(1);
@@ -155,7 +155,7 @@ static int write_wakeup_count(struct insomniad_ctx *ctx)
     int rc;
 
     assert(ctx->wakeup_count_fd != -1);
-    rc = write(ctx->wakeup_count_fd, ctx->wakeup_count, strlen(ctx->wakeup_count));
+    rc = TEMP_FAILURE_RETRY(write(ctx->wakeup_count_fd, ctx->wakeup_count, strlen(ctx->wakeup_count)));
     if (rc == -1) {
         if (errno != EINVAL && errno != EBUSY) {
             perror("Unexpected error from wakeup_count");

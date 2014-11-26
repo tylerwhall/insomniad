@@ -15,6 +15,7 @@ AM_INIT_AUTOMAKE([
         no-dist-gzip
         dist-xz])
 AM_SILENT_RULES([yes])
+AC_GNU_SOURCE
 AC_PROG_CC
 PKG_CHECK_MODULES([CHECK], [check], [HAVE_CHECK=true], [HAVE_CHECK=false])
 AM_CONDITIONAL([HAVE_CHECK], [test x$HAVE_CHECK == xtrue])
