@@ -26,6 +26,7 @@
 #include <time.h>
 #include <assert.h>
 #include <errno.h>
+#include <time.h>
 
 #include "common.h"
 #include "parse_wakeup_sources.h"
@@ -69,6 +70,21 @@ static struct wakeup_source *get_most_recent_event(void)
     return wup;
 }
 
+/*
+ * Sleep for the requested time, restarting if interrupted. Restarting is only
+ * necessary if interrupted by a signal that is configured to invoke a
+ * signal-catching function.
+ */
+int usleep_signal_safe(useconds_t usec)
+{
+    struct timespec ts;
+
+    memset(&ts, 0, sizeof(ts));
+    ts.tv_sec = usec / 1000 / 1000;
+    ts.tv_nsec = (usec % (1000 * 1000)) * 1000;
+    return TEMP_FAILURE_RETRY(nanosleep(&ts, &ts));
+}
+
 static uint64_t get_time_ms(void)
 {
     struct timespec tp;
@@ -106,7 +122,7 @@ int evaluate_policy(void)
         uint64_t delay = hysteresis_ms - delta;
 
         pr_info("Delaying for         %" PRIu64 "ms\n", delay);
-        usleep(delay * 1000);
+        usleep_signal_safe(delay * 1000);
     }
 
     return 1;

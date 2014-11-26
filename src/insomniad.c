@@ -121,7 +121,7 @@ static int go_to_sleep(struct insomniad_ctx *ctx)
     } else {
         pr_notice("Would have attempted sleep\n");
         /* Prevent busy spin */
-        sleep(1);
+        usleep_signal_safe(1 * 1000 * 1000);
     }
 
     return rc;
@@ -203,7 +203,8 @@ int main(int argc, char *argv[])
         if (rc) {
             /* Non-fatal error. Try again. */
             pr_info("Non-fatal error %s writing to suspend state\n", strerror(-rc));
-            usleep(1000);
+            /* Rate-limit suspend attempts to avoid thrashing aborted suspends */
+            usleep_signal_safe(1000);
             continue;
         }
         pr_info("Exited sleep\n");
@@ -215,7 +216,7 @@ int main(int argc, char *argv[])
          * not to sleep until it is released + our timeout. This makes sure our
          * timeout is applied to spurious wakeups as well.
          */
-        usleep(hysteresis_ms * 1000);
+        usleep_signal_safe(hysteresis_ms * 1000);
     };
     return 0;
 }
