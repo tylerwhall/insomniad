@@ -89,7 +89,7 @@ static int parse_wakeup_source(const char *line, struct wakeup_source **wup)
         "%*" SCNu64 "\t";           /* prevent_suspend_time */
 
     *wup = wakeup_source_create();
-    if (!wup)
+    if (!*wup)
         return -ENOMEM;
 
     int rc = sscanf(line, wup_src_str, &(*wup)->name, &(*wup)->last_change);
