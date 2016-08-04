@@ -97,8 +97,8 @@ static int parse_wakeup_source(const char *line, struct wakeup_source **wup)
     if (rc != 2) {
         fprintf(stderr, "Unmatched line (count %d)\n%s\n", rc, line);
         fprintf(stderr, "Match string %s\n", wup_src_str);
-        if (rc >= 1)
-            wakeup_source_unref(*wup);
+        wakeup_source_unref(*wup);
+        *wup = NULL;
         return -1;
     }
     return 0;
