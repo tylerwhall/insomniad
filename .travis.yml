@@ -3,7 +3,7 @@ before_install: "sudo apt-get update"
 install: "sudo apt-get install check"
 script: "./build.sh"
 compiler:
-    - clang
+    - gcc
 env:
   global:
    # The next declaration is the encrypted COVERITY_SCAN_TOKEN, created
