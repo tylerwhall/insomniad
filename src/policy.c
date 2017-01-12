@@ -88,7 +88,6 @@ int usleep_signal_safe(useconds_t usec)
 static uint64_t get_time_ms(void)
 {
     struct timespec tp;
-    uint64_t time = 0;
 
     int rc = clock_gettime(CLOCK_MONOTONIC, &tp);
     if (rc) {
@@ -96,7 +95,8 @@ static uint64_t get_time_ms(void)
         exit (1);
     }
 
-    time = tp.tv_sec * 1000;
+    uint64_t time = tp.tv_sec;
+    time *= 1000;
     time += tp.tv_nsec / 1000 / 1000;
     return time;
 }
