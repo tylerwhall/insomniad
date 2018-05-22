@@ -5,6 +5,14 @@ Description=User space autosleep policy daemon
 After=multi-user.target
 
 [Service]
+User=root
+NoNewPrivileges=true
+PrivateDevices=true
+ProtectSystem=strict
+ProtectKernelModules=true
+ProtectKernelTunables=true
+ReadWritePaths=/sys/power
+CapabilityBoundingSet=CAP_DAC_OVERRIDE
 Environment="TIMEOUT=10"
 ExecStart=@BINDIR@/@PACKAGE@ -t $TIMEOUT $EXTRA_ARGS
 
